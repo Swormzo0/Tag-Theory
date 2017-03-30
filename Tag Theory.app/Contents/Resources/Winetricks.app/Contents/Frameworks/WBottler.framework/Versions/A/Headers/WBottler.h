@@ -43,7 +43,6 @@ enum {
 };
 
 @interface WBottler : NSObject {
-    BOOL debug;
 	BOOL finished;
 	id bottlerController;
 	SEL callback;
@@ -76,18 +75,12 @@ enum {
 	installerIsZipped:(NSString *)tInstallerIsZipped
 		installerName:(NSString *)tInstallerName
    installerArguments:(NSString *)tInstallerArguments
-               noMono:(BOOL)tNoMono
-              noGecko:(BOOL)tNoGecko
-              noUsers:(BOOL)tNoUsers
-         noInstallers:(BOOL)tNoInstallers
 		   winetricks:(NSString *)tWinetricks
 			overrides:(NSString *)tOverrides
 				  exe:(NSString *)tExe
 		 exeArguments:(NSString *)tExeArguments
-      bundleCopyright:(NSString *)tBundleCopyright
 		bundleVersion:(NSString *)tBundleVersion
      bundleIdentifier:(NSString *)tBundleIdentifier
-   bundleCategoryType:(NSString *)tBundleCategoryType
       bundleSignature:(NSString *)tBundleSignature
 			   silent:(NSString *)tSilent
 		selfcontained:(BOOL)tSelfcontained

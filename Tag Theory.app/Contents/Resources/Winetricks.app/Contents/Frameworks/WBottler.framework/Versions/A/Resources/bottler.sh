@@ -39,11 +39,11 @@ echo "PWD..........................: '"$(PWD)"'"
 echo "PATH.........................: $PATH"
 echo "USER.........................: $USER"
 echo "HOME.........................: $HOME"
-echo "COMPUTERNAME.................: $COMPUTERNAME"
 echo "BUNDLERESOURCEPATH...........: $BUNDLERESOURCEPATH"
 echo "WINEPATH.....................: $WINEPATH"
 echo "LD_LIBRARY_PATH..............: $LD_LIBRARY_PATH"
 echo "DYLD_FALLBACK_LIBRARY_PATH...: $DYLD_FALLBACK_LIBRARY_PATH"
+echo "FONTCONFIG_FILE..............: $FONTCONFIG_FILE"
 echo "SILENT.......................: $SILENT"
 echo "http_proxy...................: $http_proxy"
 echo "https_proxy..................: $https_proxy"
@@ -57,18 +57,12 @@ echo "INSTALLER_URL................: $INSTALLER_URL"
 echo "INSTALLER_IS_ZIPPED..........: $INSTALLER_IS_ZIPPED"
 echo "INSTALLER_NAME...............: $INSTALLER_NAME"
 echo "INSTALLER_ARGUMENTS..........: $INSTALLER_ARGUMENTS"
-echo "REMOVE_MONO..................: $REMOVE_MONO"
-echo "REMOVE_GECKO.................: $REMOVE_GECKO"
-echo "REMOVE_USERS.................: $REMOVE_USERS"
-echo "REMOVE_INSTALLERS............: $REMOVE_INSTALLERS"
 echo "WINETRICKS_ITEMS.............: $WINETRICKS_ITEMS"
 echo "DLL_OVERRIDES................: $DLL_OVERRIDES"
 echo "EXECUTABLE_PATH..............: $EXECUTABLE_PATH"
 echo "EXECUTABLE_ARGUMENTS.........: $EXECUTABLE_ARGUMENTS"
 echo "EXECUTABLE_VERSION...........: $EXECUTABLE_VERSION"
-echo "BUNDLE_COPYRIGHT.............: $BUNDLE_COPYRIGHT"
 echo "BUNDLE_IDENTIFIER............: $BUNDLE_IDENTIFIER"
-echo "BUNDLE_CATEGORYTYPE..........: $BUNDLE_CATEGORYTYPE"
 echo "SILENT.......................: $SILENT"
 echo ""
 /usr/sbin/system_profiler SPHardwareDataType
@@ -84,20 +78,8 @@ export WINESERVER="$WINEPATH/wineserver"
 export WINEPREFIX=$BOTTLE/Contents/Resources/wineprefix
 export USERNAME="$USER"
 export WINEBOTTLER_TMP="/private/tmp/winebottler_$(date +%s)"
-export WINEDLLOVERRIDES=$DLL_OVERRIDES
 #export LANG=fr.UTF-8
 #export LC_CTYPE=fr_FR.UTF-8
-
-##########         Some overrides necessary bevore first launch        #########
-################################################################################
-[ "$REMOVE_MONO" == "1" ] && {
-    export WINEDLLOVERRIDES=$WINEDLLOVERRIDES"mscoree=;"
-}
-[ "$REMOVE_GECKO" == "1" ] && {
-    export WINEDLLOVERRIDES=$WINEDLLOVERRIDES"mshtml=;"
-}
-
-
 
 ##########              MULTIINSTANCE AND NOSPACE SUPPORT              #########
 ################################################################################
@@ -105,6 +87,12 @@ export WINEDLLOVERRIDES=$DLL_OVERRIDES
 # - winetricks is often not safe for paths with spaces, so we link everithing to save paths)
 export NOSPACE_PATH=$WINEBOTTLER_TMP"/nospace"
 mkdir -p "$NOSPACE_PATH"
+
+
+
+##########                 no .desktop links and menues                #########
+################################################################################
+export WINEDLLOVERRIDES=winemenubuilder.exe=d
 
 
 
@@ -235,44 +223,56 @@ winebottlerApp () {
     cat > "$BOTTLE/Contents/MacOS/startwine" <<_EOF_
 #!/bin/bash
 
-
-
 BUNDLERESOURCEPATH="\$(dirname "\$0")/../Resources"
 
-
-
-#find wine, try in Bundle, ~/Applications, /Applications, Spotlight
-if [ -f "\$BUNDLERESOURCEPATH/Wine.bundle/Contents/Resources/bin/wine" ]; then
-    export WINEUSRPATH="\$BUNDLERESOURCEPATH/Wine.bundle/Contents/Resources"
-elif [ -f "\$HOME/Applications/Wine.app/Contents/Resources/bin/wine" ]; then
-    export WINEUSRPATH="\$HOME/Applications/Wine.app/Contents/Resources"
-elif [ -f "/Applications/Wine.app/Contents/Resources/bin/wine" ]; then
+#find wine
+WINEUSRPATH=""
+#spotlight
+[ -f "\$(mdfind 'kMDItemDisplayName == Wine.app' | grep -m 1 'Wine.app')/Contents/Resources/bin/wine" ] && {
+	export WINEUSRPATH="\$(mdfind 'kMDItemDisplayName == Wine.app' | grep -m 1 'Wine.app')/Contents/Resources"
+}
+[ -f "\$(mdfind 'kMDItemDisplayName == Wine.app' | grep -m 1 'Wine.app')/Contents/Resources/usr/bin/wine" ] && {
+	export WINEUSRPATH="\$(mdfind 'kMDItemDisplayName == Wine.app' | grep -m 1 'Wine.app')/Contents/Resources/usr"
+}
+#old style
+[ -f "/Applications/Wine.app/Contents/Resources/bin/wine" ] && {
     export WINEUSRPATH="/Applications/Wine.app/Contents/Resources"
-elif [ -f "\$(mdfind 'kMDItemCFBundleIdentifier == org.kronenberg.Wine' | grep -m 1 'Wine.app')/Contents/Resources/bin/wine" ]; then
-    export WINEUSRPATH="\$(mdfind 'kMDItemCFBundleIdentifier == org.kronenberg.Wine' | grep -m 1 'Wine.app')/Contents/Resources"
-else
+}
+[ -f "\$HOME/Applications/Wine.app/Contents/Resources/bin/wine" ] && {
+    export WINEUSRPATH="\$HOME/Applications/Wine.app/Contents/Resources"
+}
+[ -f "\$BUNDLERESOURCEPATH/Wine.bundle/Contents/Resources/bin/wine" ] && {
+    export WINEUSRPATH="\$BUNDLERESOURCEPATH/Wine.bundle/Contents/Resources"
+}
+#new style
+[ -f "/Applications/Wine.app/Contents/Resources/usr/bin/wine" ] && {
+    export WINEUSRPATH="/Applications/Wine.app/Contents/Resources/usr"
+}
+[ -f "\$HOME/Applications/Wine.app/Contents/Resources/usr/bin/wine" ] && {
+    export WINEUSRPATH="\$HOME/Applications/Wine.app/Contents/Resources/usr"
+}
+[ -f "\$BUNDLERESOURCEPATH/Wine.bundle/Contents/Resources/usr/bin/wine" ] && {
+    export WINEUSRPATH="\$BUNDLERESOURCEPATH/Wine.bundle/Contents/Resources/usr"
+}
+[ "\$WINEUSRPATH"x == ""x ] && {
     echo "Wine not found!"
     exit 1
-fi
-
-
+}
 
 # create working copy
 export WINEPREFIX="\$HOME/Library/Application Support/$APP_PREFS_DOMAIN"
-if [ ! -d "\$WINEPREFIX" ]; then
-    "\$BUNDLERESOURCEPATH/Winetricks.app/Contents/MacOS/./Winetricks" "\$BUNDLERESOURCEPATH/wineprefix" "\$WINEPREFIX" "\$(defaults read "\$BUNDLERESOURCEPATH/../Info" CFBundleName)"
-fi
+"\$BUNDLERESOURCEPATH/Winetricks.app/Contents/MacOS/./Winetricks" "\$BUNDLERESOURCEPATH/wineprefix" "\$WINEPREFIX" "\$(defaults read "\$BUNDLERESOURCEPATH/../Info" CFBundleName)"
 
 
 
-# exports (we keep X11 for fallback)
+# exports
 export PATH="\$WINEUSRPATH/bin":\$PATH
-export LD_LIBRARY_PATH=\$LD_LIBRARY_PATH:"\$WINEUSRPATH/lib":"/opt/X11/lib":"/usr/X11/lib"
-export DYLD_FALLBACK_LIBRARY_PATH="/usr/lib:\$WINEUSRPATH/lib":"/opt/X11/lib":"/usr/X11/lib"
+export LD_LIBRARY_PATH=\$LD_LIBRARY_PATH:"\$WINEUSRPATH/lib"
+export DYLD_FALLBACK_LIBRARY_PATH="/usr/lib:\$WINEUSRPATH/lib"
+export FONTCONFIG_FILE="\$WINEUSRPATH/etc/fonts/fonts.conf"
 export WINEPATH="\$WINEUSRPATH/bin"
 
-#some default windows vars that might be missing ( http://ss64.com/nt/syntax-variables.html )
-[ -z "\$COMPUTERNAME" ] && export COMPUTERNAME="\$(/usr/sbin/scutil --get ComputerName)"
+
 
 # start wine and program, if possible in the programs root directory, change to forwardslashes
 BIN_FILE="\$(sed 's|\\\\|/|g' <<< "\$(defaults read "\$BUNDLERESOURCEPATH/../Info" WineProgramPath)")"
@@ -280,11 +280,7 @@ BIN_PATH="\$BUNDLERESOURCEPATH/wineprefix/drive_c\$(sed 's|C:||' <<< "\$(dirname
 if [ -d "\$BIN_PATH" ]; then
     cd "\$BIN_PATH"
 fi
-if [ "\$(defaults read "\$BUNDLERESOURCEPATH/../Info" WineProgramArguments)" != "" ]; then
 "\$WINEUSRPATH/bin/wine" "\$BIN_FILE" \$(defaults read "\$BUNDLERESOURCEPATH/../Info" WineProgramArguments)
-else
-"\$WINEUSRPATH/bin/wine" "\$BIN_FILE"
-fi
 
 _EOF_
 	chmod a+x "$BOTTLE/Contents/MacOS/startwine"
@@ -304,8 +300,8 @@ _EOF_
     <string>English</string>
     <key>CFBundleExecutable</key>
     <string>startwine</string>
-	<key>NSHumanReadableCopyright</key>
-	<string>$BUNDLE_COPYRIGHT</string>
+	<key>CFBundleGetInfoString</key>
+	<string>$APP_PREFS_DOMAIN</string>
     <key>CFBundleIdentifier</key>
     <string>$APP_PREFS_DOMAIN</string>
     <key>CFBundleInfoDictionaryVersion</key>
@@ -322,8 +318,6 @@ _EOF_
     <string>$EXECUTABLE_VERSION</string>
 	<key>CFBundleIconFile</key>
 	<string>Icon.icns</string>
-	<key>LSApplicationCategoryType</key>
-	<string>$BUNDLE_CATEGORYTYPE</string>
     <key>CFBundleDocumentTypes</key>
 	<array>
         <dict>
@@ -502,14 +496,9 @@ REGEDIT4
 [HKEY_CURRENT_USER\Software\Wine\Drivers]
 "Audio"="coreaudio"
 
-[HKEY_CURRENT_USER\Software\Wine\DllOverrides]
-"winemenubuilder.exe"="native"
-
 _EOF_
     winebottlerTry "$WINE" regedit /tmp/reg.reg
     winebottlerTry rm /tmp/reg.reg
-
-    cp "$BUNDLERESOURCEPATH/winemenubuilder.exe" "$WINEPREFIX/drive_c/windows/System32/"
 }
 export -f winebottlerReg
 
@@ -537,10 +526,10 @@ winebottlerPrefix () {
 		wait
 	}
 	cd "$WINEPREFIX/drive_c/windows"
-#   winebottlerTry rm -rf "$WINEPREFIX/drive_c/windows/system"
-#	wait
-#	winebottlerTry ln -s "system32" "system"
-#	wait
+	winebottlerTry rm -rf "$WINEPREFIX/drive_c/windows/system"
+	wait
+	winebottlerTry ln -s "system32" "system"
+	wait
     echo "###BOTTLING### Installing Truetype Fonts..."
     find /Library/Fonts -name \*.ttf -exec sh -c 'ln -s "{}" "$WINEPREFIX/drive_c/windows/Fonts/`basename "{}"`"' \;
     find ~/Library/Fonts -name \*.ttf -exec sh -c 'ln -s "{}" "$WINEPREFIX/drive_c/windows/Fonts/`basename "{}"`"' \;
@@ -549,7 +538,7 @@ winebottlerPrefix () {
     cd -
     winebottlerTry "$WINESERVER" -k
 	wait
-
+		
 	mv "$BOTTLE/Contents/Info.plist" "$BOTTLE/Contents/Info.plist2"
 	sed "s/%ProgramFiles%/$( sed 's/\\/\\\\/g' <<< $("$WINE" cmd.exe /c echo %ProgramFiles% | tr -d "\015"))/" "$BOTTLE/Contents/Info.plist2" > "$BOTTLE/Contents/Info.plist"
 	rm "$BOTTLE/Contents/Info.plist2"
@@ -586,10 +575,7 @@ export -f winebottlerPrefixCopy
 ##########                  Add items from winetricks                  #########
 ################################################################################
 function winebottlerWinetricks () {
-[ "$WINETRICKS_ITEMS" != "" ] && {
-
-        # be sure to have a nospace folder
-        mkdir -p "$NOSPACE_PATH"
+	[ "$WINETRICKS_ITEMS" != "" ] && {
 
         # prepare winetricks
         head -$(($(cat "$HOME/Library/Application Support/Wine/winetricks" | grep -n "execute_command()" | sed 's/[^0-9]//g') - 2)) "$HOME/Library/Application Support/Wine/winetricks" > "$NOSPACE_PATH/winetricks.sh"
@@ -624,8 +610,10 @@ function winebottlerWinetricks () {
 		# /WORKAROUND create "no-spaces environment"
 		export WINE="$WINESAVE"
 		export PATH=$PATHSAVE
-        export WINEPREFIX="$PREFSAVE"
-        rm -rf "$NOSPACE_PATH"
+		export WINEPREFIX="$PREFSAVE"
+
+		# CLEANUP
+        rm -rf "$NOSPACE_PATH" &> /dev/null
 	}
 }
 export -f winebottlerWinetricks
@@ -680,23 +668,22 @@ export -f winebottlerProxy
 function winebottlerOverride () {
     echo "###BOTTLING### Registering native dlls..."
     [ "$DLL_OVERRIDES"  != "" ] && {
-cat > /tmp/override-dll.reg <<_EOF_
-REGEDIT4
-
-[HKEY_CURRENT_USER\Software\Wine\DllOverrides]
-_EOF_
-
-        arr=$(echo $DLL_OVERRIDES | tr ";" "\n")
-        for x in $arr
-        do
-            sed -e 's/\(.*\)=\(.*\)/"\1"="\2"/' <<< "$x" >> /tmp/override-dll.reg
-        done
-        "$WINE" regedit /tmp/override-dll.reg
-        rm /tmp/override-dll.reg
-
+        winebottlerOverrideDlls native,builtin $DLL_OVERRIDES
     }
 }
 export -f winebottlerOverride
+
+
+
+##########                         Builtin                             #########
+################################################################################
+function winebottlerBuiltin () {
+    echo "###BOTTLING### Registering builtin dlls..."
+    [ "$DLL_BUILTINS"  != "" ] && {
+        winebottlerOverrideDlls builtin $DLL_BUILTINS
+    }
+}
+export -f winebottlerBuiltin
 
 
 
@@ -707,6 +694,7 @@ function runSanitized () {
 export WINEPATH="$WINEPATH"
 export DYLD_FALLBACK_LIBRARY_PATH="$DYLD_FALLBACK_LIBRARY_PATH"
 export LD_LIBRARY_PATH="$LD_LIBRARY_PATH"
+export FONTCONFIG_FILE="$FONTCONFIG_FILE"
 export WINEDEBUG="$WINEDEBUG"
 export DISPLAY="$DISPLAY"
 export PATH="$NOSPACE_PATH":"$PATH"
@@ -806,9 +794,8 @@ function winebottlerInstall () {
 			
 			# normal installation
 			else
-#mkdir -p "$WINEPREFIX/drive_c/windows/temp/installer"
-#cp "$INSTALLER_URL" "$WINEPREFIX/drive_c/windows/temp/installer/"
-                ln -s "$(dirname "$INSTALLER_URL")" "$WINEPREFIX/drive_c/windows/temp/installer"
+                mkdir -p "$WINEPREFIX/drive_c/windows/temp/installer"
+                cp "$INSTALLER_URL" "$WINEPREFIX/drive_c/windows/temp/installer/"
                 cd "$WINEPREFIX/drive_c/windows/temp/installer"
                 if test $(echo "$INSTALLER_NAME" | grep .msi); then
                     runSanitized "\"$WINE\" msiexec /i \"C:/windows/temp/installer/$INSTALLER_NAME\" $INSTALLER_ARGUMENTS"
@@ -816,10 +803,9 @@ function winebottlerInstall () {
                     runSanitized "\"$WINE\" \"C:/windows/temp/installer/$INSTALLER_NAME\" $INSTALLER_ARGUMENTS"
                 fi
                 cd -
-#winebottlerTry rm -rf "$WINEPREFIX/drive_c/windows/temp/installer"
-                winebottlerTry rm -f "$WINEPREFIX/drive_c/windows/temp/installer"
+                winebottlerTry rm -rf "$WINEPREFIX/drive_c/windows/temp/installer"
 			fi
-
+			
 		fi
 	}
 	
@@ -834,53 +820,6 @@ export -f winebottlerInstall
 ##########                         Cleanup                             #########
 ################################################################################
 function winebottlerCleanup () {
-
-    #dont load mono
-    [ "$REMOVE_MONO" == "1" ] && {
-        cat > /tmp/override-dll.reg <<_EOF_
-REGEDIT4
-
-[HKEY_CURRENT_USER\Software\Wine\DllOverrides]
-"mscoree"=""
-
-_EOF_
-        "$WINE" regedit /tmp/override-dll.reg
-        rm /tmp/override-dll.reg
-    }
-
-    #don't load gecko
-    [ "$REMOVE_GECKO" == "1" ] && {
-        cat > /tmp/override-dll.reg <<_EOF_
-REGEDIT4
-
-[HKEY_CURRENT_USER\Software\Wine\DllOverrides]
-"mshtml"=""
-
-_EOF_
-        "$WINE" regedit /tmp/override-dll.reg
-        rm /tmp/override-dll.reg
-    }
-
-    #remove user dir?
-    [ "$REMOVE_USERS" == "1" ] && {
-        find "$WINEPREFIX/drive_c/users" -maxdepth 1 ! -name "Public" -type d -exec rm -rf "{}" \;
-    }
-
-    cd "$WINEPREFIX/drive_c/windows"
-
-    #remove installers?
-    [ "$REMOVE_INSTALLERS" == "1" ] && {
-        rm -rf installer/*
-    }
-
-    #remove temp, logs and printer drivers
-    rm -rf temp/*
-    rm -rf logs/*
-    rm -rf system32/spool/drivers/*
-
-    cd -
-
-    # CLEANUP
     rm -rf "$WINEBOTTLER_TMP"
 echo "$WINEBOTTLER_TMP"
 }

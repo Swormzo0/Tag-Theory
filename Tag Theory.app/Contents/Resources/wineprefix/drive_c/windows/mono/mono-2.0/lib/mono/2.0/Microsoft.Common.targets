@@ -1,9 +1,6 @@
 <Project DefaultTargets="Build" InitialTargets="_ValidateEssentialProperties" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
 
-	<Import Project="$(MSBuildProjectFullPath).user" Condition="Exists('$(MSBuildProjectFullPath).user')"/>
-
 	<PropertyGroup>
-		<OutputType Condition="'$(OutputType)' == ''">Exe</OutputType>
 		<TargetExt Condition="'$(OutputType)' == 'Winexe'">.exe</TargetExt>
 		<TargetExt Condition="'$(OutputType)' == 'Exe'">.exe</TargetExt>
 		<TargetExt Condition="'$(OutputType)' == 'Library'">.dll</TargetExt>
@@ -15,8 +12,8 @@
 	</PropertyGroup>
 
 	<PropertyGroup>
-		<AssemblyName Condition="'$(AssemblyName)' == ''">$(MSBuildProjectName)</AssemblyName>
-		<OutputPath Condition="'$(OutputPath)' != '' and !HasTrailingSlash('$(OutputPath)')">$(OutputPath)\</OutputPath>
+		<AssemblyName Condition="'$(AssemblyName)' == ''">$(RootNamespace)</AssemblyName>
+		<OutputPath Condition="'$(OutputPath)' != '' and !HasTrailingSlash('$(OutputPath)')">$(OutputPath)\</OutputPath> 
 		<OutputPath Condition=" '$(Platform)'=='' and '$(Configuration)'=='' and '$(OutputPath)'=='' ">bin\Debug\</OutputPath>
 		<WarningLevel Condition="'$(WarningLevel)' == ''" >2</WarningLevel>
 		<TargetFrameworkVersion Condition="'$(TargetFrameworkVersion)' == ''">v2.0</TargetFrameworkVersion>
@@ -100,7 +97,7 @@
 			<Output TaskParameter="AppConfigFile" ItemName="AppConfigWithTargetPath"/>
 		</FindAppConfigFile>
 
-		<MakeDir
+		<MakeDir 
 			Directories="$(OutDir);$(IntermediateOutputPath);@(DocFileItem->'%(RelativeDir)')"
 		/>
 	</Target>
@@ -110,8 +107,14 @@
 	</PropertyGroup>
 	<Target Name="GetFrameworkPaths" DependsOnTargets="$(GetFrameworkPathsDependsOn)">
 		<GetFrameworkPath>
-			<Output
-				TaskParameter="Path"
+			<Output Condition="'$(TargetFrameworkVersion)' == 'v3.5'"
+				TaskParameter="FrameworkVersion35Path"
+				ItemName="_CombinedTargetFrameworkDirectoriesItem"/>
+			<Output Condition="'$(TargetFrameworkVersion)' == 'v3.0' or '$(TargetFrameworkVersion)' == 'v3.5'" 
+				TaskParameter="FrameworkVersion30Path"
+				ItemName="_CombinedTargetFrameworkDirectoriesItem"/>
+			<Output Condition="'$(TargetFrameworkVersion)' == 'v2.0' or '$(TargetFrameworkVersion)' == 'v3.0' or '$(TargetFrameworkVersion)' == 'v3.5'" 
+				TaskParameter="FrameworkVersion20Path"
 				ItemName="_CombinedTargetFrameworkDirectoriesItem"/>
 		</GetFrameworkPath>
 		<CreateProperty Value="@(_CombinedTargetFrameworkDirectoriesItem)">
@@ -119,7 +122,7 @@
 		</CreateProperty>
 
 		<Warning Text="TargetFrameworkVersion '$(TargetFrameworkVersion)' not supported by this toolset (ToolsVersion: $(MSBuildToolsVersion))."
-			Condition="'$(TargetFrameworkVersion)' != 'v2.0'"/>
+			Condition="'$(TargetFrameworkVersion)' != 'v3.5' and '$(TargetFrameworkVersion)' != 'v3.0' and '$(TargetFrameworkVersion)' != 'v2.0'"/>
 	</Target>
 
 	<PropertyGroup>
@@ -129,15 +132,12 @@
 		</AllowedReferenceAssemblyFileExtensions>
 
 		<AllowedReferenceRelatedFileExtensions Condition=" '$(AllowedReferenceRelatedFileExtensions)' == '' ">
-			.exe.mdb;
-			.dll.mdb;
-			.xml
+			.mdb
 		</AllowedReferenceRelatedFileExtensions>
 
 		<AssemblySearchPaths Condition="'$(AssemblySearchPaths)' == ''">
 			{CandidateAssemblyFiles};
 			$(ReferencePath);
-			@(AdditionalReferencePath);
 			{HintPathFromItem};
 			{TargetFrameworkDirectory};
 			{PkgConfig};
@@ -187,7 +187,7 @@
 	</Target>
 
 	<Target
-		Name="AssignProjectConfiguration"
+		Name="AssignProjectConfigurations"
 		Condition="'@(ProjectReference)' != ''">
 
 		<!-- assign configs if building a solution file -->
@@ -211,7 +211,7 @@
 		ProjectReferenceWithConfigurationNonExistent: Projects non-existent on disk -->
 
 	<Target Name="SplitProjectReferencesByExistent"
-		DependsOnTargets="AssignProjectConfiguration">
+		DependsOnTargets="AssignProjectConfigurations">
 
 		<CreateItem Include="@(ProjectReferenceWithConfiguration)" Condition="'@(ProjectReferenceWithConfiguration)' != ''">
 			<Output TaskParameter="Include" ItemName="ProjectReferenceWithConfigurationExistent"
@@ -482,7 +482,7 @@
 	<Target Name="DeployOutputFiles"
 		DependsOnTargets="PrepareResources;CoreCompile;_CopyDeployFilesToOutputDirectory;_CopyAppConfigFile">
 
-		<Copy
+		<Copy 
 			SourceFiles="$(IntermediateOutputPath)$(AssemblyName)$(TargetExt).mdb"
 			Condition="'$(OutDir)' != '' and Exists('$(IntermediateOutputPath)$(AssemblyName)$(TargetExt).mdb')"
 			DestinationFolder="$(OutDir)"
@@ -689,6 +689,10 @@
 			<Output TaskParameter="Lines" ItemName="PreviousFileWrites"/>
 		</ReadLinesFromFile>
 
+		<RemoveDuplicates Inputs="@(PreviousFileWrites);@(FileWrites->'%(FullPath)')">
+			<Output TaskParameter="Filtered" ItemName="CombinedFileWrites"/>
+		</RemoveDuplicates>
+
 		<!-- CopyLocal files: In case all the projects build to common output
 		     directory, then other projects might depend on some of these
 		     CopyLocal files, so delete only the ones under *this* project
@@ -696,10 +700,6 @@
 		<FindUnderPath Path="$(MSBuildProjectDirectory)" Files="@(FileWritesShareable)">
 			<Output TaskParameter="InPath" ItemName="FileWrites"/>
 		</FindUnderPath>
-
-		<RemoveDuplicates Inputs="@(PreviousFileWrites);@(FileWrites->'%(FullPath)')">
-			<Output TaskParameter="Filtered" ItemName="CombinedFileWrites"/>
-		</RemoveDuplicates>
 
 		<WriteLinesToFile
 			File="$(IntermediateOutputPath)$(CleanFile)"
@@ -737,7 +737,7 @@
 	</Target>
 
 	<Target Name="CleanReferencedProjects"
-		DependsOnTargets="AssignProjectConfiguration">
+		DependsOnTargets="AssignProjectConfigurations">
 
 		<!-- If building from .sln.proj or from IDE, clean will get handled by them,
 		     else we are building a project directly, from the command line, so

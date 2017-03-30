@@ -3,17 +3,17 @@
 <plist version="1.0">
 <dict>
     <key>WineProgramPath</key>
-    <string>C:/winebottler/Tag Theory.exe</string>
+    <string>C:/winebottler/Tag Theory r0110.exe</string>
     <key>WineProgramArguments</key>
     <string></string>
     <key>CFBundleDevelopmentRegion</key>
     <string>English</string>
     <key>CFBundleExecutable</key>
     <string>startwine</string>
-	<key>NSHumanReadableCopyright</key>
-	<string>© Your Company</string>
+	<key>CFBundleGetInfoString</key>
+	<string>com.yourcompany.yourapp_149085631322638</string>
     <key>CFBundleIdentifier</key>
-    <string>com.yourcompany.yourapp_147831844531645</string>
+    <string>com.yourcompany.yourapp_149085631322638</string>
     <key>CFBundleInfoDictionaryVersion</key>
     <string>6.0</string>
     <key>CFBundleName</key>
@@ -23,13 +23,11 @@
     <key>CFBundleSignature</key>
     <string>????</string>
     <key>CFBundleVersion</key>
-    <string>1.0.0</string>
+    <string>1.0</string>
     <key>CFBundleShortVersionString</key>
-    <string>1.0.0</string>
+    <string>1.0</string>
 	<key>CFBundleIconFile</key>
 	<string>Icon.icns</string>
-	<key>LSApplicationCategoryType</key>
-	<string>public.app-category.business</string>
     <key>CFBundleDocumentTypes</key>
 	<array>
         <dict>
