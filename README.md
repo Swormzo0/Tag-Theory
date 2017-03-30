@@ -1,4 +1,5 @@
 # Tag-Theory
+
 A simulation of a game of tag in a bounded rectangular playing field.
 
 <img src="/img/mode2-1.png" alt="Example Simulation" width="625"/>
