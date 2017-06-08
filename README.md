@@ -2,7 +2,7 @@
 
 A simulation of a game of tag in a bounded rectangular playing field.
 
-<img src="/img/mode2-1.png" alt="Example Simulation" width="625"/>
+<img src="/img/mode2-1.png" alt="Example Simulation" width="672"/>
 
 ## Download and Installation
 The program is currently only available for Windows but it has been tested to run successfully on OS X 10.11 (El Capitan) through [Wine (Mac)](https://www.davidbaumgold.com/tutorials/wine-mac/) without sound effects. 
@@ -14,7 +14,7 @@ Now you can run the simulation!
 
 ## Controlling the player
 
-<img src="/img/mainmenu-1.png" alt="Main Menu" width="625"/>
+<img src="/img/mainmenu-2.png" alt="Main Menu" width="672"/>
 
 You can choose how the player will move. The player can move using one of three available methods:
 1. Follow the mouse
