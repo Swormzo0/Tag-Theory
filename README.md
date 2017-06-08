@@ -17,6 +17,8 @@ Now you can run the simulation!
 ### Recommended speed
 If you want to outrun the other player, set your own speed to `200`.
 
+If you want a challenge, choose Option 1, set your speed to `144` and set the enemy's speed to `120`.
+
 ### Controlling the player
 
 <img src="/img/mainmenu-2.png" alt="Main Menu" width="672"/>
