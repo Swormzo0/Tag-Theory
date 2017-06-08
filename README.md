@@ -4,7 +4,7 @@ A simulation of a game of tag in a bounded rectangular playing field.
 
 <img src="/img/mode2-1.png" alt="Example Simulation" width="672"/>
 
-## Download and Installation
+## Download and installation
 The program is currently only available for Windows but it has been tested to run successfully on OS X 10.11 (El Capitan) through [Wine (Mac)](https://www.davidbaumgold.com/tutorials/wine-mac/) without sound effects. 
 You can probably get it to work on Linux [in the same way](https://www.linux.com/learn/how-install-and-use-wine-run-windows-applications-linux).
 
@@ -12,7 +12,7 @@ To download the simulation, click [here:](https://github.com/shermansiu/Tag-Theo
 
 Now you can run the simulation!
 
-## How-To Use
+## How to use
 
 ### Recommended speed
 If you want to outrun the other player, set your own speed to `200`.
